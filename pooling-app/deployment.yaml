@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pooling-app
+  labels:
+    app: pooling-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: pooling-app
+  template:
+    metadata:
+      labels:
+        app: pooling-app
+    spec:
+      containers:
+        - name: pooling-app
+          image: kev0-4/pooling-app:latest
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: pooling-config
+            - secretRef:
+                name: pooling-secret
