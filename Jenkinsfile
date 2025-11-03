@@ -1,11 +1,13 @@
 pipeline {
-    // agent any
-    docker {
+    agent {
+        docker {
             image 'bitnami/kubectl:latest'
             args '-v /var/run/docker.sock:/var/run/docker.sock'
+        }
     }
+
     environment {
-        KUBE_CONFIG_DATA = credentials('kubeconfig-cred')  // secret text content
+        KUBE_CONFIG_DATA = credentials('kubeconfig-cred')  // Secret text credential
     }
 
     stages {
@@ -18,7 +20,6 @@ pipeline {
         stage('Setup Kubeconfig') {
             steps {
                 script {
-                    // Write kubeconfig content to a file Jenkins can use
                     sh '''
                     echo "$KUBE_CONFIG_DATA" > kubeconfig
                     export KUBECONFIG=$PWD/kubeconfig
@@ -31,7 +32,6 @@ pipeline {
         stage('Deploy to Environment') {
             steps {
                 script {
-                    // Decide where to deploy based on branch
                     if (env.GIT_BRANCH == 'origin/dev') {
                         echo "🚀 Deploying to Dev Environment..."
                         sh '''
