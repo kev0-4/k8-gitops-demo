@@ -1,6 +1,9 @@
 pipeline {
-    agent any
-
+    // agent any
+    docker {
+            image 'bitnami/kubectl:latest'
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
+    }
     environment {
         KUBE_CONFIG_DATA = credentials('kubeconfig-cred')  // secret text content
     }
