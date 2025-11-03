@@ -2,7 +2,8 @@ pipeline {
     agent any
 
     environment {
-        KUBE_CONFIG_DATA = credentials('kubeconfig-cred')  // secret text content
+        // Uses the Jenkins credential you created
+        KUBE_CONFIG = credentials('kubeconfig-cred')
     }
 
     stages {
@@ -12,15 +13,15 @@ pipeline {
             }
         }
 
-        stage('Setup Kubeconfig') {
+        stage('Setup kubeconfig') {
             steps {
                 script {
-                    // Write kubeconfig content to a file Jenkins can use
-                    sh '''
-                    echo "$KUBE_CONFIG_DATA" > kubeconfig
-                    export KUBECONFIG=$PWD/kubeconfig
-                    kubectl config current-context
-                    '''
+                    // Write kubeconfig to a file
+                    writeFile file: 'kubeconfig', text: "${KUBE_CONFIG}"
+                    env.KUBECONFIG = "${WORKSPACE}/kubeconfig"
+
+                    // Verify cluster connection
+                    sh 'kubectl config current-context'
                 }
             }
         }
@@ -28,21 +29,14 @@ pipeline {
         stage('Deploy to Environment') {
             steps {
                 script {
-                    // Decide where to deploy based on branch
-                    if (env.GIT_BRANCH == 'origin/dev') {
-                        echo "🚀 Deploying to Dev Environment..."
-                        sh '''
-                        export KUBECONFIG=$PWD/kubeconfig
-                        kubectl apply -f pooling-app/ --namespace=dev
-                        '''
-                    } else if (env.GIT_BRANCH == 'origin/prod') {
-                        echo "🚀 Deploying to Prod Environment..."
-                        sh '''
-                        export KUBECONFIG=$PWD/kubeconfig
-                        kubectl apply -f pooling-app/ --namespace=prod
-                        '''
+                    if (env.BRANCH_NAME == 'dev') {
+                        echo "🚀 Deploying to Dev environment..."
+                        sh 'kubectl apply -f pooling-app/ -n dev'
+                    } else if (env.BRANCH_NAME == 'prod') {
+                        echo "🚀 Deploying to Prod environment..."
+                        sh 'kubectl apply -f pooling-app/ -n prod'
                     } else {
-                        echo "⚠️ Branch not recognized for deployment. Skipping."
+                        echo "⚠️ Branch not configured for deployment."
                     }
                 }
             }
